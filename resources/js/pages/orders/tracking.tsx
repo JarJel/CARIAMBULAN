@@ -104,6 +104,41 @@ export default function Tracking({ order, isGuest = false, guestToken = '' }: Tr
         return () => clearInterval(interval);
     }, [orderData.id, orderData.status, isGuest, guestToken]);
 
+    // Ekstraksi Koordinat User (Pickup) & Destination
+    const getCoords = (point: any): [number, number] | null => {
+        if (!point) return null;
+        return [
+            parseFloat(point.y ?? point.latitude ?? -6.917),
+            parseFloat(point.x ?? point.longitude ?? 107.619)
+        ];
+    };
+
+    const userCoords = orderData.pickup_latitude && orderData.pickup_longitude
+        ? [parseFloat(orderData.pickup_latitude), parseFloat(orderData.pickup_longitude)] as [number, number]
+        : getCoords(orderData.pickup_location) || [-6.917464, 107.619123];
+
+    const destinationCoords = orderData.destination_latitude && orderData.destination_longitude
+        ? [parseFloat(orderData.destination_latitude), parseFloat(orderData.destination_longitude)] as [number, number]
+        : getCoords(orderData.destination_location);
+
+    // Tentukan perutean dinamis berdasarkan status untuk ditampilkan pada peta pengguna
+    let routingBetween: any = null;
+    if (ambulanceCoords) {
+        if (['confirmed', 'on_the_way', 'arrived'].includes(orderData.status)) {
+            routingBetween = {
+                start: ambulanceCoords,
+                end: userCoords,
+                color: '#D9383A' // Merah: Ambulans meluncur ke lokasi jemput
+            };
+        } else if (orderData.status === 'transporting' && destinationCoords) {
+            routingBetween = {
+                start: ambulanceCoords,
+                end: destinationCoords,
+                color: '#0D9488' // Teal: Ambulans membawa pasien ke rumah sakit tujuan
+            };
+        }
+    }
+
     // OSRM Real Routing Calculator for ETA & Distance
     useEffect(() => {
         if (!routingBetween) {
@@ -172,21 +207,7 @@ export default function Tracking({ order, isGuest = false, guestToken = '' }: Tr
         };
     }, [echoInstance, orderData.id, orderData.status, isGuest, guestToken]);
 
-    // Ekstraksi Koordinat User (Pickup) & Destination
-    const getCoords = (point: any): [number, number] | null => {
-        if (!point) return null;
-        return [
-            parseFloat(point.y ?? point.latitude ?? -6.917),
-            parseFloat(point.x ?? point.longitude ?? 107.619)
-        ];
-    };
 
-    const userCoords = orderData.pickup_latitude && orderData.pickup_longitude
-        ? [parseFloat(orderData.pickup_latitude), parseFloat(orderData.pickup_longitude)] as [number, number]
-        : getCoords(orderData.pickup_location) || [-6.917464, 107.619123];
-    const destinationCoords = orderData.destination_latitude && orderData.destination_longitude
-        ? [parseFloat(orderData.destination_latitude), parseFloat(orderData.destination_longitude)] as [number, number]
-        : getCoords(orderData.destination_location);
 
     // Kumpulkan markers peta
     const markers: MapMarker[] = [
@@ -233,23 +254,7 @@ export default function Tracking({ order, isGuest = false, guestToken = '' }: Tr
         }
     };
 
-    // Tentukan perutean dinamis berdasarkan status untuk ditampilkan pada peta pengguna
-    let routingBetween: any = null;
-    if (ambulanceCoords) {
-        if (['confirmed', 'on_the_way', 'arrived'].includes(orderData.status)) {
-            routingBetween = {
-                start: ambulanceCoords,
-                end: userCoords,
-                color: '#D9383A' // Merah: Ambulans meluncur ke lokasi jemput
-            };
-        } else if (orderData.status === 'transporting' && destinationCoords) {
-            routingBetween = {
-                start: ambulanceCoords,
-                end: destinationCoords,
-                color: '#0D9488' // Teal: Ambulans membawa pasien ke rumah sakit tujuan
-            };
-        }
-    }
+
 
     // Submit rating/feedback
     const handleRatingSubmit = async (e: React.FormEvent) => {
@@ -364,7 +369,7 @@ export default function Tracking({ order, isGuest = false, guestToken = '' }: Tr
     return (
         <AppLayout activeMenu="booking">
             <Head title={`Live Tracking Order #${orderData.id} - AmbulanBDG`} />
-            <div className="flex flex-col lg:flex-row gap-6 p-6 w-full h-full overflow-y-auto lg:overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-6 p-6 w-full lg:h-[calc(100vh-80px)] overflow-y-auto lg:overflow-hidden bg-slate-50">
                 {/* Left Column: Tracking Map */}
                 <div className="flex-1 flex flex-col bg-white rounded-2xl border border-slate-200 shadow-lg dark:border-slate-800 dark:bg-slate-900 overflow-hidden relative min-h-[400px] lg:h-full">
                     <div className="flex-1 w-full h-full">

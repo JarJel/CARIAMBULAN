@@ -80,7 +80,7 @@ export default function AppLayout({ children, activeMenu = '' }: AppLayoutProps)
                 <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
                     {/* Brand Logo & Tagline */}
                     <Link href="/" className="flex flex-col justify-center">
-                        <span className="text-xl font-black tracking-wider block text-black">AMBUFIND</span>
+                        <span className="text-xl font-black tracking-wider block text-black">CARI AMBULAN</span>
                         <span className="text-[10px] text-gray-500 font-medium tracking-tight">Layanan Ambulans Terintegrasi Bandung</span>
                     </Link>
                     

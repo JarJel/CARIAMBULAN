@@ -256,3 +256,223 @@ test('it allows admin to approve event proposal, assign ambulance, and change st
         'action' => 'verify_event_proposal',
     ]);
 });
+
+test('it allows admin to create staff with password directly', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $institution = Institution::create([
+        'name' => 'Klinik Sukajadi',
+        'type' => 'fasyankes',
+        'verified_status' => 'verified',
+    ]);
+
+    $admin = User::create([
+        'name' => 'Fasyankes Admin',
+        'email' => 'admin_staff_create@fasyankes.com',
+        'password' => bcrypt('password'),
+        'role' => 'institution_admin',
+        'institution_id' => $institution->id,
+    ]);
+
+    $response = $this->actingAs($admin)->postJson("/api/admin/staff", [
+        'name' => 'New Driver Rudi',
+        'email' => 'rudi@driver.com',
+        'phone' => '081234567890',
+        'nik' => '3273010101010101',
+        'role' => 'driver',
+        'password' => 'secretpassword123',
+        'ktp_file' => \Illuminate\Http\UploadedFile::fake()->create('ktp.pdf', 500),
+        'sim_file' => \Illuminate\Http\UploadedFile::fake()->create('sim.pdf', 500),
+    ]);
+
+    $response->assertStatus(200);
+    $response->assertJsonPath('status', 'success');
+
+    $this->assertDatabaseHas('users', [
+        'email' => 'rudi@driver.com',
+        'role' => 'driver',
+        'institution_id' => $institution->id,
+    ]);
+
+    $user = User::where('email', 'rudi@driver.com')->first();
+    expect(Hash::check('secretpassword123', $user->password))->toBeTrue();
+});
+
+test('it renders admin staff page with staff and ambulances list', function () {
+    $institution = Institution::create([
+        'name' => 'Klinik Sukajadi',
+        'type' => 'fasyankes',
+        'verified_status' => 'verified',
+    ]);
+
+    $admin = User::create([
+        'name' => 'Fasyankes Admin',
+        'email' => 'admin_staff_page@fasyankes.com',
+        'password' => bcrypt('password'),
+        'role' => 'institution_admin',
+        'institution_id' => $institution->id,
+    ]);
+
+    $ambulance = new Ambulance();
+    $ambulance->institution_id = $institution->id;
+    $ambulance->plate_number = 'D 1234 XY';
+    $ambulance->category = 'emergency';
+    $ambulance->status = 'standby';
+    $ambulance->current_location = DB::raw("Point(107.619123, -6.917464)");
+    $ambulance->save();
+
+    $response = $this->actingAs($admin)->get("/admin/staff");
+
+    $response->assertStatus(200);
+    $response->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->component('admin/staff')
+        ->has('staff')
+        ->has('ambulances', 1)
+        ->where('ambulances.0.plate_number', 'D 1234 XY')
+    );
+});
+
+test('it allows admin to create ambulance with driver plotting', function () {
+    \Illuminate\Support\Facades\Storage::fake('public');
+
+    $institution = Institution::create([
+        'name' => 'Klinik Sukajadi',
+        'type' => 'fasyankes',
+        'verified_status' => 'verified',
+    ]);
+
+    $admin = User::create([
+        'name' => 'Fasyankes Admin',
+        'email' => 'admin_amb_create@fasyankes.com',
+        'password' => bcrypt('password'),
+        'role' => 'institution_admin',
+        'institution_id' => $institution->id,
+    ]);
+
+    $driver = User::create([
+        'name' => 'Driver Budi',
+        'email' => 'budi@driver.com',
+        'password' => bcrypt('password'),
+        'role' => 'driver',
+        'institution_id' => $institution->id,
+    ]);
+
+    // Setup an old ambulance that Budi is currently assigned to
+    $oldAmbulance = new Ambulance();
+    $oldAmbulance->institution_id = $institution->id;
+    $oldAmbulance->plate_number = 'D 1111 AB';
+    $oldAmbulance->category = 'emergency';
+    $oldAmbulance->status = 'standby';
+    $oldAmbulance->current_driver_id = $driver->id;
+    $oldAmbulance->current_location = DB::raw("Point(107.619123, -6.917464)");
+    $oldAmbulance->save();
+
+    // Create a new ambulance plotting Budi
+    $response = $this->actingAs($admin)->postJson("/api/admin/ambulances", [
+        'plate_number' => 'D 2222 AB',
+        'category' => 'emergency',
+        'brand' => 'Suzuki APV',
+        'year' => 2022,
+        'capacity' => 1,
+        'driver_id' => $driver->id,
+        'stnk_file' => \Illuminate\Http\UploadedFile::fake()->create('stnk.pdf', 500),
+        'operasional_file' => \Illuminate\Http\UploadedFile::fake()->create('operasional.pdf', 500),
+        'is_draft' => false,
+    ]);
+
+    $response->assertStatus(200);
+    $response->assertJsonPath('status', 'success');
+
+    // Assert driver has been assigned to the new ambulance
+    $newAmbulance = Ambulance::where('plate_number', 'D 2222 AB')->first();
+    expect($newAmbulance->current_driver_id)->toBe($driver->id);
+
+    // Assert driver has been cleared from the old ambulance
+    $oldAmbulance->refresh();
+    expect($oldAmbulance->current_driver_id)->toBeNull();
+});
+
+test('it renders admin ambulances page with drivers list', function () {
+    $institution = Institution::create([
+        'name' => 'Klinik Sukajadi',
+        'type' => 'fasyankes',
+        'verified_status' => 'verified',
+    ]);
+
+    $admin = User::create([
+        'name' => 'Fasyankes Admin',
+        'email' => 'admin_amb_page@fasyankes.com',
+        'password' => bcrypt('password'),
+        'role' => 'institution_admin',
+        'institution_id' => $institution->id,
+    ]);
+
+    $driver = User::create([
+        'name' => 'Driver Budi',
+        'email' => 'budi@driver.com',
+        'password' => bcrypt('password'),
+        'role' => 'driver',
+        'institution_id' => $institution->id,
+    ]);
+
+    $response = $this->actingAs($admin)->get("/admin/ambulances");
+
+    $response->assertStatus(200);
+    $response->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+        ->component('admin/ambulances')
+        ->has('ambulances')
+        ->has('drivers', 1)
+        ->where('drivers.0.name', 'Driver Budi')
+    );
+});
+
+test('it updates patient_details table with vitals when postUpdatePatientCondition is called', function () {
+    $customer = User::create([
+        'name' => 'Customer Anto',
+        'email' => 'anto@customer.com',
+        'password' => bcrypt('password'),
+        'role' => 'customer',
+    ]);
+
+    $order = Order::create([
+        'user_id' => $customer->id,
+        'ambulance_id' => null,
+        'order_type' => 'SOS',
+        'status' => 'pending',
+        'pickup_location' => DB::raw("Point(107.619123, -6.917464)"),
+        'pickup_address' => 'Jl. Ir. H. Juanda No. 100',
+        'fare_amount' => 0.00,
+    ]);
+
+    // First save basic patient details
+    $detail = \App\Models\PatientDetail::create([
+        'order_id' => $order->id,
+        'patient_name' => 'Udin',
+        'patient_age' => 45,
+        'condition_notes' => 'Pingsan mendadak',
+    ]);
+
+    // Send observations condition updates
+    $response = $this->actingAs($customer)->postJson("/api/orders/{$order->id}/patient-condition", [
+        'patient_condition' => 'Tensi: 120/80 mmHg, Suhu: 36.5 °C',
+        'tensi' => '120/80',
+        'suhu' => '36.5',
+        'nadi' => '80',
+        'pernapasan' => '18',
+        'spo2' => '98',
+    ]);
+
+    $response->assertStatus(200);
+    $response->assertJsonPath('status', 'success');
+
+    // Verify patient_details has these new vital columns
+    $this->assertDatabaseHas('patient_details', [
+        'order_id' => $order->id,
+        'patient_name' => 'Udin',
+        'tensi' => '120/80',
+        'suhu' => '36.5',
+        'nadi' => '80',
+        'pernapasan' => '18',
+        'spo2' => '98',
+    ]);
+});

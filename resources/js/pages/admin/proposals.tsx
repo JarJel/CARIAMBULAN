@@ -12,6 +12,7 @@ export default function AdminProposals({ proposals, ambulances }: Props) {
     const [activeProposalId, setActiveProposalId] = useState<number | null>(null);
     const [selectedAmbulanceId, setSelectedAmbulanceId] = useState<number | null>(null);
     const [rejectionReason, setRejectionReason] = useState<string>('');
+    const [activeRejectConfirmId, setActiveRejectConfirmId] = useState<number | null>(null);
 
     const handleVerifyProposal = async (id: number, status: 'approved' | 'rejected') => {
         try {
@@ -121,19 +122,42 @@ export default function AdminProposals({ proposals, ambulances }: Props) {
                                                         </div>
 
                                                         <div className="flex gap-2 justify-end mt-2">
-                                                            <button
-                                                                onClick={() => handleVerifyProposal(prop.id, 'approved')}
-                                                                disabled={!selectedAmbulanceId}
-                                                                className="bg-emerald-650 text-white rounded px-2.5 py-1 text-[10px] font-bold uppercase disabled:opacity-50"
-                                                            >
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleVerifyProposal(prop.id, 'rejected')}
-                                                                className="bg-red-650 text-white rounded px-2.5 py-1 text-[10px] font-bold uppercase"
-                                                            >
-                                                                Reject
-                                                            </button>
+                                                             {activeRejectConfirmId === prop.id ? (
+                                                                <div className="flex items-center gap-1.5 bg-red-50 p-1.5 rounded border border-red-200">
+                                                                    <span className="text-[9px] font-bold text-red-700">Yakin Reject?</span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleVerifyProposal(prop.id, 'rejected');
+                                                                            setActiveRejectConfirmId(null);
+                                                                        }}
+                                                                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[8px] font-bold uppercase transition cursor-pointer"
+                                                                    >
+                                                                        Yes
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setActiveRejectConfirmId(null)}
+                                                                        className="bg-slate-200 hover:bg-slate-350 text-slate-700 px-2 py-1 rounded text-[8px] font-bold uppercase transition cursor-pointer"
+                                                                    >
+                                                                        No
+                                                                    </button>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleVerifyProposal(prop.id, 'approved')}
+                                                                        disabled={!selectedAmbulanceId}
+                                                                        className="bg-emerald-650 text-white rounded px-2.5 py-1 text-[10px] font-bold uppercase disabled:opacity-50 transition cursor-pointer"
+                                                                    >
+                                                                        Approve
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setActiveRejectConfirmId(prop.id)}
+                                                                        className="bg-red-650 text-white rounded px-2.5 py-1 text-[10px] font-bold uppercase transition cursor-pointer"
+                                                                    >
+                                                                        Reject
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                             <button
                                                                 onClick={() => setActiveProposalId(null)}
                                                                 className="bg-gray-300 text-slate-800 rounded px-2.5 py-1 text-[10px] font-bold uppercase"

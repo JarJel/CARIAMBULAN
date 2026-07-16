@@ -27,7 +27,8 @@ class OrderController extends Controller
             'ambulance.currentDriver',
             'ambulance.currentNurse',
             'patientDetail',
-            'payment'
+            'payment',
+            'user'
         ])->findOrFail($id);
 
         // Inject order pickup coordinates
@@ -39,9 +40,32 @@ class OrderController extends Controller
 
         // Inject order destination coordinates if exists
         $destCoords = DB::selectOne("SELECT ST_X(destination_location) as lng, ST_Y(destination_location) as lat FROM orders WHERE id = ?", [$id]);
-        if ($destCoords) {
+        if ($destCoords && $destCoords->lat && $destCoords->lng) {
             $order->destination_latitude = $destCoords->lat;
             $order->destination_longitude = $destCoords->lng;
+        } elseif ($order->status === 'transporting' && $order->ambulance_id) {
+            // Fallback for active transporting orders without a set destination (e.g. SOS)
+            $ambulance = Ambulance::with('institution')->find($order->ambulance_id);
+            if ($ambulance && $ambulance->institution) {
+                $inst = $ambulance->institution;
+                if (!$order->destination_address) {
+                    $order->destination_address = $inst->name . ', ' . $inst->address;
+                }
+                $addressLower = strtolower($inst->address);
+                if (str_contains($addressLower, 'pasteur')) {
+                    $order->destination_latitude = -6.90389;
+                    $order->destination_longitude = 107.61861;
+                } elseif (str_contains($addressLower, 'juanda') || str_contains($addressLower, 'borromeus')) {
+                    $order->destination_latitude = -6.89658;
+                    $order->destination_longitude = 107.60421;
+                } elseif (str_contains($addressLower, 'aceh') || str_contains($addressLower, 'pmi')) {
+                    $order->destination_latitude = -6.9095;
+                    $order->destination_longitude = 107.6165;
+                } else {
+                    $order->destination_latitude = -6.917464;
+                    $order->destination_longitude = 107.619123;
+                }
+            }
         }
 
         if ($order->ambulance) {
@@ -374,6 +398,32 @@ class OrderController extends Controller
             $newStatus = $request->status;
 
             $order->status = $newStatus;
+
+            // Auto-persist default hospital/institution destination on SOS transporting transition
+            if ($newStatus === 'transporting' && !$order->destination_location && $order->ambulance_id) {
+                $ambulance = Ambulance::with('institution')->find($order->ambulance_id);
+                if ($ambulance && $ambulance->institution) {
+                    $inst = $ambulance->institution;
+                    $order->destination_address = $inst->name . ', ' . $inst->address;
+                    
+                    $addressLower = strtolower($inst->address);
+                    if (str_contains($addressLower, 'pasteur')) {
+                        $lat = -6.90389;
+                        $lng = 107.61861;
+                    } elseif (str_contains($addressLower, 'juanda') || str_contains($addressLower, 'borromeus')) {
+                        $lat = -6.89658;
+                        $lng = 107.60421;
+                    } elseif (str_contains($addressLower, 'aceh') || str_contains($addressLower, 'pmi')) {
+                        $lat = -6.9095;
+                        $lng = 107.6165;
+                    } else {
+                        $lat = -6.917464;
+                        $lng = 107.619123;
+                    }
+                    $order->destination_location = DB::raw("Point({$lng}, {$lat})");
+                }
+            }
+
             $order->save();
 
             // Catat riwayat perubahan status
@@ -578,6 +628,11 @@ class OrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'patient_condition' => 'required|string',
+            'tensi' => 'nullable|string|max:255',
+            'suhu' => 'nullable|string|max:255',
+            'nadi' => 'nullable|string|max:255',
+            'pernapasan' => 'nullable|string|max:255',
+            'spo2' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -589,6 +644,22 @@ class OrderController extends Controller
         $order->update([
             'patient_condition' => $request->patient_condition,
         ]);
+
+        // Simpan juga ke table patient_details seperti data pasien dari customer
+        $existingDetail = \App\Models\PatientDetail::where('order_id', $order->id)->first();
+        $patientName = $existingDetail ? $existingDetail->patient_name : 'Pasien Darurat';
+
+        \App\Models\PatientDetail::updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'patient_name' => $patientName,
+                'tensi' => $request->tensi,
+                'suhu' => $request->suhu,
+                'nadi' => $request->nadi,
+                'pernapasan' => $request->pernapasan,
+                'spo2' => $request->spo2,
+            ]
+        );
 
         // Broadcast update
         try {

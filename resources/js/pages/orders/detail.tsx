@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '../../layouts/AppLayout';
 import Map, { MapMarker } from '../../components/Map';
 
@@ -7,6 +7,9 @@ interface Props {
 }
 
 export default function OrderDetail({ order }: Props) {
+    const { auth } = usePage().props as any;
+    const currentUser = auth?.user;
+    const isStaff = currentUser && ['driver', 'nurse', 'hospital_admin', 'super_admin'].includes(currentUser.role);
     const getCoords = (point: any): [number, number] | null => {
         if (!point) return null;
         return [
@@ -88,6 +91,80 @@ export default function OrderDetail({ order }: Props) {
                                 )}
                             </div>
                         </div>
+
+                        {/* Informasi Medis & Observasi Pasien (Hanya untuk Driver/Staf Medis) */}
+                        {isStaff && order.patient_detail && (
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 space-y-4">
+                                <h3 className="font-extrabold text-sm border-b pb-3 uppercase tracking-wider text-slate-400">Data Medis & Observasi Pasien</h3>
+                                <div className="space-y-3 text-xs leading-relaxed">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Nama Pasien</span>
+                                            <span className="font-semibold text-slate-700">{order.patient_detail.patient_name || '-'}</span>
+                                        </div>
+                                        <div>
+                                            <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Usia Pasien</span>
+                                            <span className="font-semibold text-slate-700">
+                                                {order.patient_detail.patient_age ? `${order.patient_detail.patient_age} Tahun` : '-'}
+                                            </span>
+                                        </div>
+                                        {order.patient_detail.secondary_emergency_contact && (
+                                            <div className="col-span-2">
+                                                <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Kontak Darurat Kedua</span>
+                                                <span className="font-semibold text-slate-700">{order.patient_detail.secondary_emergency_contact}</span>
+                                            </div>
+                                        )}
+                                        {order.patient_detail.condition_notes && (
+                                            <div className="col-span-2 border-t pt-2">
+                                                <span className="font-bold text-slate-400 uppercase text-[9px] tracking-wider block">Keluhan Pasien (Customer)</span>
+                                                <p className="text-slate-600 italic bg-slate-50 p-2 rounded border mt-0.5">
+                                                    "{order.patient_detail.condition_notes}"
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Vital Signs (Observasi Klinis) */}
+                                    {(order.patient_detail.tensi || order.patient_detail.suhu || order.patient_detail.nadi || order.patient_detail.pernapasan || order.patient_detail.spo2) && (
+                                        <div className="border-t pt-3 space-y-2">
+                                            <span className="font-bold text-teal-600 dark:text-teal-400 uppercase text-[10px] tracking-wider block">🩺 Catatan Vital Sign (Kru Perawat)</span>
+                                            <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-900/30 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                                {order.patient_detail.tensi && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Tensi Darah:</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-350">{order.patient_detail.tensi} mmHg</span>
+                                                    </div>
+                                                )}
+                                                {order.patient_detail.suhu && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Suhu Badan:</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-350">{order.patient_detail.suhu} °C</span>
+                                                    </div>
+                                                )}
+                                                {order.patient_detail.nadi && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Denyut Nadi:</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-350">{order.patient_detail.nadi} bpm</span>
+                                                    </div>
+                                                )}
+                                                {order.patient_detail.pernapasan && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-500">Laju Napas:</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-350">{order.patient_detail.pernapasan} x/menit</span>
+                                                    </div>
+                                                )}
+                                                {order.patient_detail.spo2 && (
+                                                    <div className="flex justify-between col-span-2 border-t pt-1 mt-1">
+                                                        <span className="text-slate-500">Saturasi Oksigen (SpO2):</span>
+                                                        <span className="font-bold text-slate-700 dark:text-slate-350">{order.patient_detail.spo2}%</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Kolom Kanan: Kru, Pembayaran & Ulasan */}

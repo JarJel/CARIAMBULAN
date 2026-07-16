@@ -5,9 +5,9 @@ export default function Register() {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
-        role: 'customer', // default role
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -17,104 +17,142 @@ export default function Register() {
 
     return (
         <AppLayout role="customer" activeMenu="">
-            <Head title="Daftar Akun Baru - AmbulanBDG" />
-            <div className="flex items-center justify-center min-h-full w-full p-6">
-                <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-xl rounded-2xl p-8 space-y-6">
-                    <div className="text-center space-y-2">
-                        <h2 className="font-extrabold text-2xl tracking-tight">DAFTAR AKUN BARU</h2>
-                        <p className="text-xs text-slate-500">Silakan isi formulir di bawah ini untuk membuat akun baru.</p>
+            <Head title="DAFTAR AKUN BARU - SENTRAL AMBULAN" />
+            <div className="flex items-center justify-center min-h-screen w-full bg-[#F8F9FA] p-6">
+                <div className="w-full max-w-md bg-white border border-black p-8 space-y-6">
+                    
+                    {/* Brand & Heading dengan Gaya Tipografi Tegas */}
+                    <div className="text-center space-y-1.5">
+                        <span className="text-xs font-mono tracking-widest text-[#D9383A] block uppercase font-bold">
+                            SENTRAL AMBULAN
+                        </span>
+                        <h2 className="font-black text-2xl tracking-tight uppercase text-[#1A1A1A]">
+                            DAFTAR AKUN BARU
+                        </h2>
+                        <div className="w-12 h-0.5 bg-black mx-auto my-3"></div>
+                        <p className="text-xs text-gray-500 font-mono uppercase tracking-tight">
+                            Silakan isi formulir di bawah ini untuk membuat akun baru.
+                        </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                        {/* Input Nama Lengkap */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nama Lengkap</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Nama Lengkap
+                            </label>
                             <input
                                 type="text"
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
-                                placeholder="Masukkan nama lengkap Anda"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="MASUKKAN NAMA LENGKAP ANDA"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.name && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.name}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.name} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Input Email */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Email
+                            </label>
                             <input
                                 type="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
-                                placeholder="nama@email.com"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="NAMA@EMAIL.COM"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.email && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.email}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.email} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Input Nomor Telepon */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Pilih Peran Akun (Role)</label>
-                            <select
-                                value={data.role}
-                                onChange={(e) => setData('role', e.target.value)}
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none"
-                            >
-                                <option value="customer">Pelanggan / Customer</option>
-                                <option value="driver">Driver Ambulans</option>
-                                <option value="nurse">Perawat Medis</option>
-                            </select>
-                            {errors.role && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.role}</span>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Nomor Telepon
+                            </label>
+                            <input
+                                type="text"
+                                value={data.phone}
+                                onChange={(e) => setData('phone', e.target.value)}
+                                placeholder="CONTOH: 08123456789"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
+                                required
+                            />
+                            {errors.phone && (
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.phone} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Input Kata Sandi */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Kata Sandi</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Kata Sandi
+                            </label>
                             <input
                                 type="password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
-                                placeholder="Masukkan kata sandi baru"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="MASUKKAN KATA SANDI BARU"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.password && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.password}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.password} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Input Konfirmasi Kata Sandi */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Konfirmasi Kata Sandi</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Konfirmasi Kata Sandi
+                            </label>
                             <input
                                 type="password"
                                 value={data.password_confirmation}
                                 onChange={(e) => setData('password_confirmation', e.target.value)}
-                                placeholder="Masukkan kembali kata sandi"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="MASUKKAN KEMBALI KATA SANDI"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.password_confirmation && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.password_confirmation}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.password_confirmation} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Tombol Daftar Akun Utama */}
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white rounded-lg py-2.5 text-xs font-bold shadow transition uppercase tracking-wider"
+                            className="w-full bg-[#D9383A] hover:bg-red-700 disabled:bg-red-400 text-white rounded-none py-4 text-xs font-black tracking-widest uppercase transition shadow-sm mt-2"
                         >
-                            Daftar Akun
+                            {processing ? 'MEMPROSES...' : 'DAFTAR AKUN SEKARANG'}
                         </button>
                     </form>
 
-                    <div className="text-center text-xs text-slate-500">
+                    <hr className="border-gray-200" />
+
+                    {/* Link Kembali ke Login */}
+                    <div className="text-center text-xs font-mono uppercase tracking-tight text-gray-500">
                         Sudah memiliki akun?{' '}
-                        <Link href="/login" className="font-bold text-teal-600 hover:underline">
-                            Masuk
+                        <Link href="/login" className="font-black text-[#1A1A1A] hover:text-[#D9383A] underline underline-offset-4 decoration-1">
+                            Masuk Disini
                         </Link>
                     </div>
                 </div>

@@ -8,6 +8,7 @@ interface Props {
 
 export default function AdminDocuments({ documents }: Props) {
     const [message, setMessage] = useState<string | null>(null);
+    const [activeRejectConfirmId, setActiveRejectConfirmId] = useState<number | null>(null);
 
     const handleVerify = async (id: number, status: 'approved' | 'rejected') => {
         try {
@@ -83,20 +84,41 @@ export default function AdminDocuments({ documents }: Props) {
                                     </td>
                                     <td className="p-6 text-right">
                                         {doc.verification_status === 'pending' && (
-                                            <div className="flex gap-2 justify-end">
-                                                <button
-                                                    onClick={() => handleVerify(doc.id, 'approved')}
-                                                    className="bg-emerald-600 text-white rounded px-3 py-1.5 font-bold uppercase text-[9px]"
-                                                >
-                                                    Setujui
-                                                </button>
-                                                <button
-                                                    onClick={() => handleVerify(doc.id, 'rejected')}
-                                                    className="bg-red-655 text-white rounded px-3 py-1.5 font-bold uppercase text-[9px]"
-                                                >
-                                                    Tolak
-                                                </button>
-                                            </div>
+                                            activeRejectConfirmId === doc.id ? (
+                                                <div className="flex items-center gap-1.5 bg-red-50 p-1.5 rounded border border-red-200">
+                                                    <span className="text-[9px] font-bold text-red-750">Yakin?</span>
+                                                    <button
+                                                        onClick={() => {
+                                                            handleVerify(doc.id, 'rejected');
+                                                            setActiveRejectConfirmId(null);
+                                                        }}
+                                                        className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-[8px] font-bold uppercase transition cursor-pointer"
+                                                    >
+                                                        Yes
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setActiveRejectConfirmId(null)}
+                                                        className="bg-slate-200 hover:bg-slate-350 text-slate-700 px-2 py-1 rounded text-[8px] font-bold uppercase transition cursor-pointer"
+                                                    >
+                                                        No
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => handleVerify(doc.id, 'approved')}
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded px-3 py-1.5 font-bold uppercase text-[9px] cursor-pointer"
+                                                    >
+                                                        Setujui
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setActiveRejectConfirmId(doc.id)}
+                                                        className="bg-red-650 hover:bg-red-550 text-white rounded px-3 py-1.5 font-bold uppercase text-[9px] cursor-pointer"
+                                                    >
+                                                        Tolak
+                                                    </button>
+                                                </div>
+                                            )
                                         )}
                                     </td>
                                 </tr>

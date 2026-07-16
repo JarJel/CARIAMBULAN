@@ -314,6 +314,7 @@ class AdminController extends Controller
             'base_fare' => 'nullable|numeric|min:0',
             'price_per_km' => 'nullable|numeric|min:0',
             'is_free_service_eligible' => 'nullable|boolean',
+            'driver_id' => 'nullable|exists:users,id',
             'stnk_file' => $isDraft ? 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'kir_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'operasional_file' => $isDraft ? 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120' : 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -372,6 +373,16 @@ class AdminController extends Controller
                         'expiry_date' => $request->input($inputName . '_expiry') ? Carbon::parse($request->input($inputName . '_expiry'))->toDateString() : null,
                         'status' => 'pending',
                     ]);
+                }
+            }
+
+            // Bind driver if supplied
+            if ($request->driver_id) {
+                $driverUser = User::where('id', $request->driver_id)->where('role', 'driver')->first();
+                if ($driverUser) {
+                    Ambulance::where('current_driver_id', $driverUser->id)->update(['current_driver_id' => null]);
+                    $ambulance->current_driver_id = $driverUser->id;
+                    $ambulance->save();
                 }
             }
 
@@ -451,6 +462,7 @@ class AdminController extends Controller
             'phone' => 'required|string|max:20',
             'nik' => 'required|digits:16',
             'role' => 'required|in:driver,nurse,dual',
+            'password' => 'required|string|min:8',
             'default_ambulance_id' => 'nullable|exists:ambulances,id',
             'sim_file' => 'nullable|required_if:role,driver,dual|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'str_file' => 'nullable|required_if:role,nurse,dual|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -476,7 +488,7 @@ class AdminController extends Controller
                 'phone' => $request->phone,
                 'nik' => $request->nik,
                 'role' => $primaryRole,
-                'password' => bcrypt(Str::random(16)), // random pass, password set later via invite
+                'password' => bcrypt($request->password), // Set password directly
                 'institution_id' => $institutionId,
                 'invitation_token' => $invitationToken,
             ]);

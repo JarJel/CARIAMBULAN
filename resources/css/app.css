@@ -9,4 +9,13 @@
         'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+
+    /* Custom 650 shades to resolve undefined colors in layouts and gradients */
+    --color-red-650: #cc2020;
+    --color-teal-650: #0e857c;
+    --color-blue-650: #2059e2;
+    --color-purple-650: #882bc6;
+    --color-slate-650: #3d4b5f;
+    --color-gray-650: #414b5a;
+    --color-emerald-650: #048760;
 }

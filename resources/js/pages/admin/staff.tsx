@@ -18,6 +18,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
     const [nik, setNik] = useState('');
     const [role, setRole] = useState('driver');
     const [defaultAmbulanceId, setDefaultAmbulanceId] = useState('');
+    const [password, setPassword] = useState('');
     const [inviteLink, setInviteLink] = useState<string | null>(null);
 
     // Document file uploads
@@ -67,6 +68,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
         formData.append('nik', nik);
         formData.append('role', role);
         formData.append('default_ambulance_id', defaultAmbulanceId);
+        formData.append('password', password);
 
         if (ktpFile) formData.append('ktp_file', ktpFile);
         if (simFile) formData.append('sim_file', simFile);
@@ -88,6 +90,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
                 setPhone('');
                 setNik('');
                 setDefaultAmbulanceId('');
+                setPassword('');
                 setKtpFile(null);
                 setSimFile(null);
                 setStrFile(null);
@@ -172,7 +175,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
                             setInviteLink(null);
                             setShowCreateModal(true);
                         }}
-                        className="bg-teal-650 hover:bg-teal-700 text-white rounded-xl px-5 py-3 text-xs font-bold shadow uppercase transition"
+                        className="bg-teal-700 text-white rounded-xl px-5 py-3 text-xs font-bold shadow uppercase transition"
                     >
                         + Daftarkan Personel Baru
                     </button>
@@ -288,7 +291,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
             {/* MODAL ONBOARDING PERSONAL BARU */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4 my-8">
                         <div className="text-center">
                             <h3 className="font-extrabold text-base">Registrasi & Undang Kru Medis</h3>
                             <p className="text-xs text-slate-450 mt-1">Daftarkan kru baru untuk mendapatkan link aktivasi login mandiri.</p>
@@ -314,6 +317,11 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
                                     <label className="block font-bold text-slate-500 mb-1">Nomor Telepon</label>
                                     <input type="tel" required placeholder="08123456789" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border rounded-lg p-2" />
                                 </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block font-bold text-slate-500 mb-1">Kata Sandi (Password Login Staf)</label>
+                                <input type="password" required minLength={8} placeholder="Ketik kata sandi minimal 8 karakter..." value={password} onChange={(e) => setPassword(e.target.value)} className="w-full border rounded-lg p-2" />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -366,7 +374,7 @@ export default function AdminStaff({ staff, ambulances = [] }: Props) {
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="flex-1 py-2 font-bold bg-teal-650 text-white rounded-lg shadow-md"
+                                    className="flex-1 py-2 font-bold bg-teal-700 text-white rounded-lg shadow-md"
                                 >
                                     Daftarkan & Generate Token
                                 </button>

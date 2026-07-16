@@ -38,6 +38,7 @@ export default function Welcome({ initialActiveSosOrder = null }: { initialActiv
 
     // 5. Active SOS State
     const [activeSosOrder, setActiveSosOrder] = useState<any | null>(initialActiveSosOrder);
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [guestPhone, setGuestPhone] = useState('');
     const [mapZoom, setMapZoom] = useState(13);
 
@@ -543,7 +544,7 @@ export default function Welcome({ initialActiveSosOrder = null }: { initialActiv
 
     return (
         <AppLayout activeMenu="booking">
-            <Head title="AMBUFIND - Layanan Ambulans Terintegrasi Bandung" />
+            <Head title="CARI AMBULAN - Layanan Ambulans Terintegrasi Bandung" />
 
             <div className="bg-white text-[#1A1A1A] font-sans min-h-screen flex flex-col">
                 
@@ -679,28 +680,47 @@ export default function Welcome({ initialActiveSosOrder = null }: { initialActiv
 
                                     <div className="pt-4">
                                         {['awaiting_driver_response', 'confirmed', 'on_the_way', 'arrived'].includes(activeSosOrder.status) && (
-                                            <button
-                                                onClick={async () => {
-                                                    if (confirm('Batalkan panggilan darurat ini?')) {
-                                                        try {
-                                                            const res = await fetch(`/api/orders/${activeSosOrder.id}/status`, {
-                                                                method: 'POST',
-                                                                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                                                                body: JSON.stringify({ status: 'cancelled' })
-                                                            });
-                                                            if (res.ok) {
-                                                                const data = await res.json();
-                                                                setActiveSosOrder(data.order);
-                                                            }
-                                                        } catch (err) {
-                                                            console.error("Gagal batal:", err);
-                                                        }
-                                                    }
-                                                }}
-                                                className="w-full bg-black text-white py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-gray-900 transition"
-                                            >
-                                                Batalkan Panggilan
-                                            </button>
+                                            showCancelConfirm ? (
+                                                <div className="space-y-2 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+                                                    <p className="text-xs font-semibold text-red-700">Yakin ingin membatalkan panggilan darurat ini?</p>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={async () => {
+                                                                try {
+                                                                    const res = await fetch(`/api/orders/${activeSosOrder.id}/status`, {
+                                                                        method: 'POST',
+                                                                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                                                                        body: JSON.stringify({ status: 'cancelled' })
+                                                                    });
+                                                                    if (res.ok) {
+                                                                        const data = await res.json();
+                                                                        setActiveSosOrder(data.order);
+                                                                        setShowCancelConfirm(false);
+                                                                    }
+                                                                } catch (err) {
+                                                                    console.error("Gagal batal:", err);
+                                                                }
+                                                            }}
+                                                            className="flex-1 bg-red-650 hover:bg-red-700 text-white py-2 rounded text-xs font-bold uppercase transition"
+                                                        >
+                                                            Ya, Batal
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setShowCancelConfirm(false)}
+                                                            className="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded text-xs font-bold uppercase transition"
+                                                        >
+                                                            Tidak
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setShowCancelConfirm(true)}
+                                                    className="w-full bg-black text-white py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-gray-900 transition cursor-pointer"
+                                                >
+                                                    Batalkan Panggilan
+                                                </button>
+                                            )
                                         )}
                                         {activeSosOrder.status === 'completed' && (
                                             <button
@@ -1074,7 +1094,7 @@ export default function Welcome({ initialActiveSosOrder = null }: { initialActiv
 
                 {/* FOOTER */}
                 <footer className="bg-white py-8 px-6 text-center text-xs text-gray-400 font-mono">
-                    &copy; 2026 AMBUFIND BANDUNG. NO ICONS. PURE INFORMATION.
+                    &copy; 2026 CARI AMBULAN BANDUNG. NO ICONS. PURE INFORMATION.
                 </footer>
 
             </div>

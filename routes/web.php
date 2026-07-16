@@ -262,8 +262,11 @@ Route::middleware(['auth'])->group(function () {
             if (auth()->user()->role !== 'institution_admin') abort(403);
             $instId = auth()->user()->institution_id;
             return inertia('admin/ambulances', [
-                'ambulances' => \App\Models\Ambulance::with('documents')
+                'ambulances' => \App\Models\Ambulance::with(['documents', 'currentDriver', 'currentNurse'])
                     ->where('institution_id', $instId)
+                    ->get(),
+                'drivers' => \App\Models\User::where('institution_id', $instId)
+                    ->where('role', 'driver')
                     ->get()
             ]);
         })->name('admin.ambulances');
@@ -275,7 +278,8 @@ Route::middleware(['auth'])->group(function () {
                 'staff' => \App\Models\User::with('staffProfile')
                     ->where('institution_id', $instId)
                     ->whereIn('role', ['driver', 'nurse'])
-                    ->get()
+                    ->get(),
+                'ambulances' => \App\Models\Ambulance::where('institution_id', $instId)->get()
             ]);
         })->name('admin.staff');
 

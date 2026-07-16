@@ -55,8 +55,9 @@ class DatabaseSeeder extends Seeder
             'institution_id' => $rshs->id,
         ]);
 
+        // Driver & Nurse RSHS Unit 1
         $driverRshs = User::create([
-            'name' => 'Driver RSHS',
+            'name' => 'Driver RSHS 01',
             'email' => 'driver_rshs@ambulanbdg.com',
             'password' => bcrypt('password123'),
             'phone' => '081222222222',
@@ -65,10 +66,29 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $nurseRshs = User::create([
-            'name' => 'Nurse RSHS',
+            'name' => 'Nurse RSHS 01',
             'email' => 'nurse_rshs@ambulanbdg.com',
             'password' => bcrypt('password123'),
             'phone' => '081333333333',
+            'role' => 'nurse',
+            'institution_id' => $rshs->id,
+        ]);
+
+        // Tambahan Driver & Nurse RSHS untuk Ambulans Emergency Unit 2
+        $driverRshs2 = User::create([
+            'name' => 'Driver RSHS 02',
+            'email' => 'driver_rshs2@ambulanbdg.com',
+            'password' => bcrypt('password123'),
+            'phone' => '081222222223',
+            'role' => 'driver',
+            'institution_id' => $rshs->id,
+        ]);
+
+        $nurseRshs2 = User::create([
+            'name' => 'Nurse RSHS 02',
+            'email' => 'nurse_rshs2@ambulanbdg.com',
+            'password' => bcrypt('password123'),
+            'phone' => '081333333334',
             'role' => 'nurse',
             'institution_id' => $rshs->id,
         ]);
@@ -112,11 +132,30 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $driverPmi = User::create([
-            'name' => 'Driver PMI',
+            'name' => 'Driver PMI 01',
             'email' => 'driver_pmi@ambulanbdg.com',
             'password' => bcrypt('password123'),
             'phone' => '081888888888',
             'role' => 'driver',
+            'institution_id' => $pmi->id,
+        ]);
+
+        // Tambahan Driver & Nurse PMI untuk Ambulans Emergency Baru
+        $driverPmi2 = User::create([
+            'name' => 'Driver PMI 02',
+            'email' => 'driver_pmi2@ambulanbdg.com',
+            'password' => bcrypt('password123'),
+            'phone' => '081888888889',
+            'role' => 'driver',
+            'institution_id' => $pmi->id,
+        ]);
+
+        $nursePmi2 = User::create([
+            'name' => 'Nurse PMI 02',
+            'email' => 'nurse_pmi2@ambulanbdg.com',
+            'password' => bcrypt('password123'),
+            'phone' => '081777777778',
+            'role' => 'nurse',
             'institution_id' => $pmi->id,
         ]);
 
@@ -125,6 +164,14 @@ class DatabaseSeeder extends Seeder
             'user_id' => $driverRshs->id,
             'staff_type' => 'driver',
             'license_number' => 'SIM-RSHS-999',
+            'license_expiry' => now()->addYear()->toDateString(),
+            'verification_status' => 'approved',
+        ]);
+
+        StaffProfile::create([
+            'user_id' => $driverRshs2->id,
+            'staff_type' => 'driver',
+            'license_number' => 'SIM-RSHS-998',
             'license_expiry' => now()->addYear()->toDateString(),
             'verification_status' => 'approved',
         ]);
@@ -146,9 +193,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         StaffProfile::create([
+            'user_id' => $driverPmi2->id,
+            'staff_type' => 'driver',
+            'license_number' => 'SIM-PMI-776',
+            'license_expiry' => now()->addYear()->toDateString(),
+            'verification_status' => 'approved',
+        ]);
+
+        StaffProfile::create([
             'user_id' => $nurseRshs->id,
             'staff_type' => 'nurse',
             'license_number' => 'STR-RSHS-222',
+            'license_expiry' => now()->addYear()->toDateString(),
+            'verification_status' => 'approved',
+        ]);
+
+        StaffProfile::create([
+            'user_id' => $nurseRshs2->id,
+            'staff_type' => 'nurse',
+            'license_number' => 'STR-RSHS-223',
             'license_expiry' => now()->addYear()->toDateString(),
             'verification_status' => 'approved',
         ]);
@@ -161,7 +224,17 @@ class DatabaseSeeder extends Seeder
             'verification_status' => 'approved',
         ]);
 
+        StaffProfile::create([
+            'user_id' => $nursePmi2->id,
+            'staff_type' => 'nurse',
+            'license_number' => 'STR-PMI-112',
+            'license_expiry' => now()->addYear()->toDateString(),
+            'verification_status' => 'approved',
+        ]);
+
         // 6. Create Standby Ambulances close to Bandung Wetan / Gedung Sate (Longitude: 107.6188, Latitude: -6.9024)
+        
+        // [EMERGENCY 1] - RSHS Unit 01 (Dekat Gedung Sate)
         $ambRshs = new Ambulance();
         $ambRshs->institution_id = $rshs->id;
         $ambRshs->plate_number = 'D 1111 RSH';
@@ -172,9 +245,24 @@ class DatabaseSeeder extends Seeder
         $ambRshs->price_per_km = 18000.00;
         $ambRshs->current_driver_id = $driverRshs->id;
         $ambRshs->current_nurse_id = $nurseRshs->id;
-        $ambRshs->current_location = DB::raw("Point(107.618600, -6.902500)"); // Near Gedung Sate
+        $ambRshs->current_location = DB::raw("Point(107.618600, -6.902500)"); 
         $ambRshs->save();
 
+        // [EMERGENCY 2] - RSHS Unit 02 (Dekat Balai Kota Bandung)
+        $ambRshs2 = new Ambulance();
+        $ambRshs2->institution_id = $rshs->id;
+        $ambRshs2->plate_number = 'D 1112 RSH';
+        $ambRshs2->category = 'emergency';
+        $ambRshs2->status = 'standby';
+        $ambRshs2->is_free_service_eligible = true;
+        $ambRshs2->base_fare = 120000.00;
+        $ambRshs2->price_per_km = 18000.00;
+        $ambRshs2->current_driver_id = $driverRshs2->id;
+        $ambRshs2->current_nurse_id = $nurseRshs2->id;
+        $ambRshs2->current_location = DB::raw("Point(107.609600, -6.913400)"); // Dekat Balai Kota
+        $ambRshs2->save();
+
+        // [NON-EMERGENCY] - Borromeus
         $ambBor = new Ambulance();
         $ambBor->institution_id = $borromeus->id;
         $ambBor->plate_number = 'D 2222 BOR';
@@ -188,6 +276,7 @@ class DatabaseSeeder extends Seeder
         $ambBor->current_location = DB::raw("Point(107.604200, -6.896500)"); // Near Cihampelas Walk
         $ambBor->save();
 
+        // [CORPSE] - PMI Unit 01
         $ambPmi = new Ambulance();
         $ambPmi->institution_id = $pmi->id;
         $ambPmi->plate_number = 'D 3333 PMI';
@@ -200,11 +289,33 @@ class DatabaseSeeder extends Seeder
         $ambPmi->current_location = DB::raw("Point(107.616500, -6.891500)"); // Near Dago
         $ambPmi->save();
 
+        // [EMERGENCY 3] - PMI Unit 02 (Dekat Alun-Alun Bandung)
+        $ambPmi2 = new Ambulance();
+        $ambPmi2->institution_id = $pmi->id;
+        $ambPmi2->plate_number = 'D 3334 PMI';
+        $ambPmi2->category = 'emergency';
+        $ambPmi2->status = 'standby';
+        $ambPmi2->is_free_service_eligible = true;
+        $ambPmi2->base_fare = 0.00; // Layanan PMI Emergency murni gratis operasional relawan
+        $ambPmi2->price_per_km = 0.00;
+        $ambPmi2->current_driver_id = $driverPmi2->id;
+        $ambPmi2->current_nurse_id = $nursePmi2->id;
+        $ambPmi2->current_location = DB::raw("Point(107.606900, -6.921900)"); // Dekat Alun-Alun
+        $ambPmi2->save();
+
         // 7. Create Vehicle Documents for the ambulances (Valid 1 year)
         VehicleDocument::create([
             'ambulance_id' => $ambRshs->id,
             'doc_type' => 'STNK',
             'document_path' => '/uploads/documents/stnk_rshs.pdf',
+            'verification_status' => 'approved',
+            'expiry_date' => now()->addYear()->toDateString(),
+        ]);
+
+        VehicleDocument::create([
+            'ambulance_id' => $ambRshs2->id,
+            'doc_type' => 'STNK',
+            'document_path' => '/uploads/documents/stnk_rshs2.pdf',
             'verification_status' => 'approved',
             'expiry_date' => now()->addYear()->toDateString(),
         ]);
@@ -221,6 +332,14 @@ class DatabaseSeeder extends Seeder
             'ambulance_id' => $ambPmi->id,
             'doc_type' => 'STNK',
             'document_path' => '/uploads/documents/stnk_pmi.pdf',
+            'verification_status' => 'approved',
+            'expiry_date' => now()->addYear()->toDateString(),
+        ]);
+
+        VehicleDocument::create([
+            'ambulance_id' => $ambPmi2->id,
+            'doc_type' => 'STNK',
+            'document_path' => '/uploads/documents/stnk_pmi2.pdf',
             'verification_status' => 'approved',
             'expiry_date' => now()->addYear()->toDateString(),
         ]);

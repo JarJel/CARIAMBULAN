@@ -8,76 +8,102 @@ export default function Login() {
         remember: false,
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // Menghilangkan anotasi tipe data TypeScript (: React.FormEvent) agar aman di React JS biasa
+    const handleSubmit = (e) => {
         e.preventDefault();
         post('/login');
     };
 
     return (
         <AppLayout role="customer" activeMenu="">
-            <Head title="Masuk Akun - AmbulanBDG" />
-            <div className="flex items-center justify-center min-h-full w-full p-6">
-                <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80 shadow-xl rounded-2xl p-8 space-y-6">
-                    <div className="text-center space-y-2">
-                        <h2 className="font-extrabold text-2xl tracking-tight">MASUK AKUN</h2>
-                        <p className="text-xs text-slate-500">Silakan masukkan email dan kata sandi Anda untuk melanjutkan.</p>
+            <Head title="MASUK AKUN - SENTRAL AMBULAN" />
+            <div className="flex items-center justify-center min-h-screen w-full bg-[#F8F9FA] p-6">
+                <div className="w-full max-w-md bg-white border border-black p-8 space-y-6">
+                    
+                    {/* Brand & Heading dengan Gaya Tipografi Tegas */}
+                    <div className="text-center space-y-1.5">
+                        <span className="text-xs font-mono tracking-widest text-[#D9383A] block uppercase font-bold">
+                            SENTRAL AMBULAN
+                        </span>
+                        <h2 className="font-black text-2xl tracking-tight uppercase text-[#1A1A1A]">
+                            MASUK AKUN
+                        </h2>
+                        <div className="w-12 h-0.5 bg-black mx-auto my-3"></div>
+                        <p className="text-xs text-gray-500 font-mono uppercase tracking-tight">
+                            Masukkan email dan kata sandi untuk melanjutkan.
+                        </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {/* Input Email */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Email
+                            </label>
                             <input
                                 type="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
-                                placeholder="nama@email.com"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="NAMA@EMAIL.COM"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.email && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.email}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.email} ]
+                                </span>
                             )}
                         </div>
 
+                        {/* Input Password */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Kata Sandi</label>
+                            <label className="block text-xs font-black text-[#1A1A1A] uppercase tracking-wider mb-1.5">
+                                Kata Sandi
+                            </label>
                             <input
                                 type="password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
-                                placeholder="Masukkan kata sandi"
-                                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                placeholder="MASUKKAN KATA SANDI"
+                                className="w-full rounded-none border border-gray-300 px-4 py-3 text-xs font-mono uppercase placeholder-gray-400 text-[#1A1A1A] bg-white focus:outline-none focus:border-black focus:ring-0 transition"
                                 required
                             />
                             {errors.password && (
-                                <span className="text-[10px] text-red-500 font-semibold mt-1 block">{errors.password}</span>
+                                <span className="text-[10px] text-[#D9383A] font-mono font-bold uppercase mt-1.5 block">
+                                    [ ERROR: {errors.password} ]
+                                </span>
                             )}
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
-                            <label className="flex items-center gap-2 cursor-pointer font-medium text-slate-500">
+                        {/* Remember Me Toggle */}
+                        <div className="flex items-center justify-between text-xs font-mono uppercase tracking-tight">
+                            <label className="flex items-center gap-2 cursor-pointer font-bold text-gray-600 hover:text-black">
                                 <input
                                     type="checkbox"
                                     checked={data.remember}
                                     onChange={(e) => setData('remember', e.target.checked)}
-                                    className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                    className="rounded-none border-gray-300 text-black focus:ring-0 focus:ring-offset-0 w-4 h-4"
                                 />
                                 Ingat Saya
                             </label>
                         </div>
 
+                        {/* Tombol Submit Utama */}
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full bg-teal-600 hover:bg-teal-700 disabled:bg-teal-400 text-white rounded-lg py-2.5 text-xs font-bold shadow transition uppercase tracking-wider"
+                            className="w-full bg-[#D9383A] hover:bg-red-700 disabled:bg-red-400 text-white rounded-none py-4 text-xs font-black tracking-widest uppercase transition shadow-sm"
                         >
-                            Masuk
+                            {processing ? 'MEMPROSES...' : 'MASUK SEKARANG'}
                         </button>
                     </form>
 
-                    <div className="text-center text-xs text-slate-500">
+                    <hr className="border-gray-200" />
+
+                    {/* Link Pendaftaran */}
+                    <div className="text-center text-xs font-mono uppercase tracking-tight text-gray-500">
                         Belum punya akun?{' '}
-                        <Link href="/register" className="font-bold text-teal-600 hover:underline">
+                        <Link href="/register" className="font-black text-[#1A1A1A] hover:text-[#D9383A] underline underline-offset-4 decoration-1">
                             Daftar Sekarang
                         </Link>
                     </div>

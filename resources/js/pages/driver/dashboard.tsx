@@ -28,11 +28,21 @@ export default function DriverDashboard({ ambulances, currentUser }: DriverDashb
     // 2. Active Trip State
     const [activeTrip, setActiveTrip] = useState<any | null>(null);
     const [patientCondition, setPatientCondition] = useState<string>('');
+    const [tensi, setTensi] = useState('');
+    const [suhu, setSuhu] = useState('');
+    const [nadi, setNadi] = useState('');
+    const [pernapasan, setPernapasan] = useState('');
+    const [spo2, setSpo2] = useState('');
+    const [kondisiLain, setKondisiLain] = useState('');
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [driverCoords, setDriverCoords] = useState<[number, number] | null>(null);
 
     // Offline queue status
     const [offlineQueue, setOfflineQueue] = useState<any[]>([]);
+
+    // Track previous trip ID and status to prevent polling from overwriting keystrokes
+    const prevTripKeyRef = useRef<string | null>(null);
     
     // Checklist Modal States
     const [showChecklistModal, setShowChecklistModal] = useState(false);
@@ -374,6 +384,78 @@ export default function DriverDashboard({ ambulances, currentUser }: DriverDashb
         });
     };
 
+    // Parser untuk mendeteksi catatan kondisi medis terformat
+    useEffect(() => {
+        const tripKey = activeTrip ? `${activeTrip.id}_${activeTrip.status}` : null;
+        if (prevTripKeyRef.current === tripKey) {
+            // Jika ID dan status sama (misalnya update dari polling berkala), jangan timpa input pengguna
+            return;
+        }
+        prevTripKeyRef.current = tripKey;
+
+        if (activeTrip && activeTrip.patient_condition) {
+            const cond = activeTrip.patient_condition;
+            const tensiMatch = cond.match(/Tensi:\s*([^,\n]+)/i);
+            const suhuMatch = cond.match(/Suhu:\s*([^,\n]+)/i);
+            const nadiMatch = cond.match(/Nadi:\s*([^,\n]+)/i);
+            const respMatch = cond.match(/Pernapasan:\s*([^,\n]+)/i);
+            const spo2Match = cond.match(/SpO2:\s*([^.\n]+)/i);
+            const notesMatch = cond.match(/Catatan Tambahan:\s*(.+)/i);
+
+            setTensi(tensiMatch ? tensiMatch[1].replace(/\s*mmHg/i, '').trim() : '');
+            setSuhu(suhuMatch ? suhuMatch[1].replace(/\s*°C/i, '').trim() : '');
+            setNadi(nadiMatch ? nadiMatch[1].replace(/\s*bpm/i, '').trim() : '');
+            setPernapasan(respMatch ? respMatch[1].replace(/\s*x\/menit/i, '').trim() : '');
+            setSpo2(spo2Match ? spo2Match[1].replace(/\s*%/i, '').trim() : '');
+            
+            if (notesMatch) {
+                setKondisiLain(notesMatch[1].trim());
+            } else if (!tensiMatch && !suhuMatch && !nadiMatch && !respMatch && !spo2Match) {
+                setKondisiLain(cond);
+            } else {
+                setKondisiLain('');
+            }
+        } else {
+            setTensi('');
+            setSuhu('');
+            setNadi('');
+            setPernapasan('');
+            setSpo2('');
+            setKondisiLain('');
+        }
+    }, [activeTrip]);
+
+    // Aksi 6: Simpan Kondisi Medis Pasien Terstruktur (Observasi Kru Perawat)
+    const handleSaveStructuredCondition = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!activeTrip) return;
+        setMessage(null);
+
+        const parts = [];
+        if (tensi) parts.push(`Tensi: ${tensi} mmHg`);
+        if (suhu) parts.push(`Suhu: ${suhu} °C`);
+        if (nadi) parts.push(`Nadi: ${nadi} bpm`);
+        if (pernapasan) parts.push(`Pernapasan: ${pernapasan} x/menit`);
+        if (spo2) parts.push(`SpO2: ${spo2}%`);
+        
+        let formattedText = parts.join(', ');
+        if (kondisiLain) {
+            formattedText += `${formattedText ? '. ' : ''}Catatan Tambahan: ${kondisiLain}`;
+        }
+
+        executeAction(`/api/orders/${activeTrip.id}/patient-condition`, 'POST', { 
+            patient_condition: formattedText,
+            tensi,
+            suhu,
+            nadi,
+            pernapasan,
+            spo2
+        }, (data) => {
+            setMessage({ type: 'success', text: 'Data kondisi medis pasien berhasil disimpan.' });
+            setActiveTrip(data.order);
+        });
+    };
+
     // Hitung koordinat penjemputan & tujuan untuk ditampilkan di peta driver
     const getCoords = (latField: any, lngField: any) => {
         if (latField === undefined || latField === null || lngField === undefined || lngField === null) return null;
@@ -533,6 +615,20 @@ export default function DriverDashboard({ ambulances, currentUser }: DriverDashb
                                                 {activeTrip.destination_address && (
                                                     <p className="text-slate-500"><b className="text-slate-700">Tujuan:</b> {activeTrip.destination_address}</p>
                                                 )}
+                                                {activeTrip.user?.name && (
+                                                    <p className="text-slate-500"><b className="text-slate-700">Nama Customer:</b> {activeTrip.user.name}</p>
+                                                )}
+                                                {(activeTrip.guest_phone || activeTrip.user?.phone) && (
+                                                    <p className="text-slate-500">
+                                                        <b className="text-slate-700">No. Telepon Customer:</b>{' '}
+                                                        <a 
+                                                            href={`tel:${activeTrip.guest_phone || activeTrip.user?.phone}`} 
+                                                            className="text-teal-600 dark:text-teal-400 font-bold hover:underline"
+                                                        >
+                                                            {activeTrip.guest_phone || activeTrip.user?.phone}
+                                                        </a>
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -561,6 +657,45 @@ export default function DriverDashboard({ ambulances, currentUser }: DriverDashb
                                                             "{activeTrip.patient_detail.condition_notes || 'Tidak ada catatan.'}"
                                                         </p>
                                                     </div>
+
+                                                    {/* VITAL SIGNS OBSERVASI DRIVER/PERAWAT */}
+                                                    {(activeTrip.patient_detail.tensi || activeTrip.patient_detail.suhu || activeTrip.patient_detail.nadi || activeTrip.patient_detail.pernapasan || activeTrip.patient_detail.spo2) && (
+                                                        <div className="border-t border-slate-100 pt-2.5 space-y-2">
+                                                            <span className="text-teal-600 dark:text-teal-400 block font-bold">🩺 Hasil Observasi Klinis (Vital Signs):</span>
+                                                            <div className="grid grid-cols-2 gap-2 bg-slate-50/50 dark:bg-slate-950 p-2.5 rounded-lg border border-slate-100 dark:border-slate-850">
+                                                                {activeTrip.patient_detail.tensi && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-slate-500">Tensi:</span>
+                                                                        <span className="font-bold text-slate-800 dark:text-slate-200">{activeTrip.patient_detail.tensi} mmHg</span>
+                                                                    </div>
+                                                                )}
+                                                                {activeTrip.patient_detail.suhu && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-slate-500">Suhu:</span>
+                                                                        <span className="font-bold text-slate-800 dark:text-slate-200">{activeTrip.patient_detail.suhu} °C</span>
+                                                                    </div>
+                                                                )}
+                                                                {activeTrip.patient_detail.nadi && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-slate-500">Nadi:</span>
+                                                                        <span className="font-bold text-slate-800 dark:text-slate-200">{activeTrip.patient_detail.nadi} bpm</span>
+                                                                    </div>
+                                                                )}
+                                                                {activeTrip.patient_detail.pernapasan && (
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-slate-500">Napas:</span>
+                                                                        <span className="font-bold text-slate-800 dark:text-slate-200">{activeTrip.patient_detail.pernapasan} x/menit</span>
+                                                                    </div>
+                                                                )}
+                                                                {activeTrip.patient_detail.spo2 && (
+                                                                    <div className="flex justify-between col-span-2 border-t pt-1 mt-1">
+                                                                        <span className="text-slate-500">SpO2:</span>
+                                                                        <span className="font-bold text-slate-800 dark:text-slate-200">{activeTrip.patient_detail.spo2}%</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         ) : (
@@ -616,13 +751,116 @@ export default function DriverDashboard({ ambulances, currentUser }: DriverDashb
                                                 </button>
                                             )}
 
-                                            <button 
-                                                onClick={() => handleUpdateTripStatus('cancelled')}
-                                                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg py-2 text-xs font-bold transition"
-                                            >
-                                                Batalkan Tugas
-                                            </button>
+                                            {showCancelConfirm ? (
+                                                <div className="space-y-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-xl text-center">
+                                                    <p className="text-[11px] font-bold text-red-700 dark:text-red-400">Yakin ingin membatalkan tugas perjalanan ini?</p>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                handleUpdateTripStatus('cancelled');
+                                                                setShowCancelConfirm(false);
+                                                            }}
+                                                            className="flex-1 bg-red-600 hover:bg-red-700 text-white py-1.5 rounded-lg text-[10px] font-black uppercase transition cursor-pointer"
+                                                        >
+                                                            Ya, Batal
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setShowCancelConfirm(false)}
+                                                            className="flex-1 bg-slate-250 hover:bg-slate-300 text-slate-700 py-1.5 rounded-lg text-[10px] font-black uppercase transition cursor-pointer"
+                                                        >
+                                                            Tidak
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => setShowCancelConfirm(true)}
+                                                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg py-2 text-xs font-bold transition cursor-pointer"
+                                                >
+                                                    Batalkan Tugas
+                                                </button>
+                                            )}
                                         </div>
+
+                                        {/* PLOT OBSERVASI KLINIS UNTUK PERAWAT DI AKUN DRIVER (STATUS: TRANSPORTING) */}
+                                        {activeTrip.status === 'transporting' && (
+                                            <form onSubmit={handleSaveStructuredCondition} className="border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-4 bg-slate-50 dark:bg-slate-900/30">
+                                                <div>
+                                                    <span className="text-[10px] uppercase font-black text-teal-600 dark:text-teal-400 block tracking-wider mb-1">📋 Lembar Observasi Klinis Pasien (Khusus Perawat)</span>
+                                                    <p className="text-[10px] text-slate-500">Perawat silakan isi vital sign pasien selama perjalanan rujukan ke IGD tujuan.</p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Tensi Darah (mmHg)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="120/80" 
+                                                            value={tensi} 
+                                                            onChange={(e) => setTensi(e.target.value)} 
+                                                            className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Suhu Badan (°C)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="36.5" 
+                                                            value={suhu} 
+                                                            onChange={(e) => setSuhu(e.target.value)} 
+                                                            className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Nadi (bpm)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="80" 
+                                                            value={nadi} 
+                                                            onChange={(e) => setNadi(e.target.value)} 
+                                                            className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">Napas (x/menit)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="18" 
+                                                            value={pernapasan} 
+                                                            onChange={(e) => setPernapasan(e.target.value)} 
+                                                            className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                        />
+                                                    </div>
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <label className="block text-[10px] font-bold text-slate-500 mb-1">SpO2 (%)</label>
+                                                        <input 
+                                                            type="text" 
+                                                            placeholder="98" 
+                                                            value={spo2} 
+                                                            onChange={(e) => setSpo2(e.target.value)} 
+                                                            className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Catatan Tambahan Kondisi Pasien</label>
+                                                    <textarea
+                                                        value={kondisiLain}
+                                                        onChange={(e) => setKondisiLain(e.target.value)}
+                                                        placeholder="Keluhan tambahan, terapi oksigen, dll..."
+                                                        className="w-full text-xs border border-slate-200 rounded-lg p-2 bg-white dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-500 min-h-[60px]"
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    type="submit"
+                                                    className="w-full bg-teal-700 hover:bg-teal-600 text-white rounded-lg py-2.5 text-xs font-black shadow uppercase transition tracking-wide cursor-pointer"
+                                                >
+                                                    Simpan Catatan Observasi Pasien
+                                                </button>
+                                            </form>
+                                        )}
 
                                     {currentUser.institution?.type === 'relawan' && (
                                         <form onSubmit={handleSavePatientCondition} className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-3 bg-slate-50/20">

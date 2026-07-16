@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['order_id', 'patient_name', 'patient_age', 'condition_notes', 'secondary_emergency_contact'])]
+#[Fillable(['order_id', 'patient_name', 'patient_age', 'condition_notes', 'secondary_emergency_contact', 'tensi', 'suhu', 'nadi', 'pernapasan', 'spo2'])]
 class PatientDetail extends Model
 {
     use HasFactory;

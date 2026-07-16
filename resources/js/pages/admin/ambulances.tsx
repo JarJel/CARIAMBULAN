@@ -4,9 +4,10 @@ import AppLayout from '../../layouts/AppLayout';
 
 interface Props {
     ambulances: any[];
+    drivers?: any[];
 }
 
-export default function AdminAmbulances({ ambulances }: Props) {
+export default function AdminAmbulances({ ambulances, drivers = [] }: Props) {
     const [message, setMessage] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<number | null>(null);
     const [baseFare, setBaseFare] = useState<string>('');
@@ -29,6 +30,25 @@ export default function AdminAmbulances({ ambulances }: Props) {
     const [kirExpiry, setKirExpiry] = useState('');
     const [operasionalFile, setOperasionalFile] = useState<File | null>(null);
     const [operasionalExpiry, setOperasionalExpiry] = useState('');
+
+    // Driver Plotting States
+    const [driverSearch, setDriverSearch] = useState('');
+    const [driverFilter, setDriverFilter] = useState('all'); // 'all', 'unassigned'
+    const [selectedDriverId, setSelectedDriverId] = useState('');
+
+    const filteredDrivers = (drivers || []).filter(drv => {
+        const matchesSearch = drv.name.toLowerCase().includes(driverSearch.toLowerCase()) || 
+                              drv.email.toLowerCase().includes(driverSearch.toLowerCase());
+        
+        if (!matchesSearch) return false;
+
+        if (driverFilter === 'unassigned') {
+            const isAssigned = ambulances.some(a => a.current_driver_id === drv.id);
+            return !isAssigned;
+        }
+
+        return true;
+    });
 
     // Clone State
     const [showCloneModal, setShowCloneModal] = useState(false);
@@ -75,6 +95,9 @@ export default function AdminAmbulances({ ambulances }: Props) {
         formData.append('price_per_km', pricePerKm || '0');
         formData.append('is_free_service_eligible', isFreeService ? '1' : '0');
         formData.append('is_draft', isDraft ? '1' : '0');
+        if (selectedDriverId) {
+            formData.append('driver_id', selectedDriverId);
+        }
 
         if (stnkFile) {
             formData.append('stnk_file', stnkFile);
@@ -278,7 +301,7 @@ export default function AdminAmbulances({ ambulances }: Props) {
             {/* MODAL TAMBAH ARMADA BARU */}
             {showCreateModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-4 my-8">
                         <div className="text-center">
                             <h3 className="font-extrabold text-base">Registrasi Armada Baru</h3>
                             <p className="text-xs text-slate-400">Daftarkan plat nomor dan berkas legalitas ambulans.</p>
@@ -333,6 +356,71 @@ export default function AdminAmbulances({ ambulances }: Props) {
                                 <div>
                                     <label className="block font-bold text-slate-550 mb-1">Tarif per KM (Rp)</label>
                                     <input type="number" placeholder="7000" value={pricePerKm} onChange={(e) => setPricePerKm(e.target.value)} className="w-full rounded-lg border p-2" />
+                                </div>
+                            </div>
+
+                            {/* PLOT DRIVER WITH SEARCH & FILTER */}
+                            <div className="space-y-2.5">
+                                <label className="block font-bold text-slate-550 mb-0.5">Plot Pengemudi (Driver)</label>
+                                <div className="space-y-2 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/20">
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Cari driver berdasarkan nama / email..." 
+                                            value={driverSearch} 
+                                            onChange={(e) => setDriverSearch(e.target.value)} 
+                                            className="flex-1 rounded-lg border p-2 text-xs bg-white dark:border-slate-800 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                        />
+                                        <select 
+                                            value={driverFilter} 
+                                            onChange={(e) => setDriverFilter(e.target.value)}
+                                            className="rounded-lg border p-2 text-xs bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-700"
+                                        >
+                                            <option value="all">Semua Driver</option>
+                                            <option value="unassigned">Belum Punya Armada</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div className="max-h-[130px] overflow-y-auto space-y-1.5 pr-1 mt-2 bg-white dark:bg-slate-950 border dark:border-slate-800 rounded-lg p-2">
+                                        <label className="flex items-center gap-2.5 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 rounded cursor-pointer text-slate-700 dark:text-slate-350">
+                                            <input 
+                                                type="radio" 
+                                                name="driver_id" 
+                                                value="" 
+                                                checked={selectedDriverId === ''} 
+                                                onChange={() => setSelectedDriverId('')} 
+                                                className="text-teal-600 focus:ring-teal-500"
+                                            />
+                                            <span className="font-semibold">Tanpa Driver (Kosong)</span>
+                                        </label>
+                                        {filteredDrivers.map(drv => {
+                                            const isAssigned = ambulances.some(a => a.current_driver_id === drv.id);
+                                            return (
+                                                <label key={drv.id} className="flex items-center justify-between p-1.5 hover:bg-slate-50 dark:hover:bg-slate-900 rounded cursor-pointer text-slate-700 dark:text-slate-350 border-t border-slate-100 dark:border-slate-900">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <input 
+                                                            type="radio" 
+                                                            name="driver_id" 
+                                                            value={drv.id} 
+                                                            checked={selectedDriverId === drv.id.toString()} 
+                                                            onChange={() => setSelectedDriverId(drv.id.toString())} 
+                                                            className="text-teal-600 focus:ring-teal-500"
+                                                        />
+                                                        <div>
+                                                            <span className="font-bold">{drv.name}</span>
+                                                            <span className="text-[10px] text-gray-400 block font-mono">{drv.email}</span>
+                                                        </div>
+                                                    </div>
+                                                    {isAssigned && (
+                                                        <span className="text-[9px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-extrabold px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900 uppercase shrink-0">Punya Armada</span>
+                                                    )}
+                                                </label>
+                                            );
+                                        })}
+                                        {filteredDrivers.length === 0 && (
+                                            <p className="text-slate-400 dark:text-slate-500 italic text-[11px] text-center py-4">Tidak ada driver yang cocok.</p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 

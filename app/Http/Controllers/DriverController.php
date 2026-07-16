@@ -120,7 +120,7 @@ class DriverController extends Controller
         }
 
         // Cari order aktif untuk armada ini
-        $order = Order::with(['patientDetail', 'payment'])
+        $order = Order::with(['patientDetail', 'payment', 'user'])
             ->where('ambulance_id', $ambulance->id)
             ->whereIn('status', ['awaiting_driver_response', 'confirmed', 'on_the_way', 'arrived', 'transporting'])
             ->first();
@@ -141,6 +141,30 @@ class DriverController extends Controller
                 $order->pickup_longitude = $coords->pickup_lng;
                 $order->destination_latitude = $coords->dest_lat;
                 $order->destination_longitude = $coords->dest_lng;
+            }
+
+            if ($order->status === 'transporting' && !$order->destination_latitude && $order->ambulance_id) {
+                $ambulance = Ambulance::with('institution')->find($order->ambulance_id);
+                if ($ambulance && $ambulance->institution) {
+                    $inst = $ambulance->institution;
+                    if (!$order->destination_address) {
+                        $order->destination_address = $inst->name . ', ' . $inst->address;
+                    }
+                    $addressLower = strtolower($inst->address);
+                    if (str_contains($addressLower, 'pasteur')) {
+                        $order->destination_latitude = -6.90389;
+                        $order->destination_longitude = 107.61861;
+                    } elseif (str_contains($addressLower, 'juanda') || str_contains($addressLower, 'borromeus')) {
+                        $order->destination_latitude = -6.89658;
+                        $order->destination_longitude = 107.60421;
+                    } elseif (str_contains($addressLower, 'aceh') || str_contains($addressLower, 'pmi')) {
+                        $order->destination_latitude = -6.9095;
+                        $order->destination_longitude = 107.6165;
+                    } else {
+                        $order->destination_latitude = -6.917464;
+                        $order->destination_longitude = 107.619123;
+                    }
+                }
             }
         }
 
